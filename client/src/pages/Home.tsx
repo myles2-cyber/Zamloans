@@ -1,5 +1,3 @@
-import { startLogin } from "@/const";
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, ArrowRight, Check, ChevronRight, CircleHelp, FileText, LockKeyhole, ShieldCheck, Sparkles, WalletCards } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -13,7 +11,6 @@ const steps = [
 ];
 
 export default function Home() {
-  const { isAuthenticated } = useAuth();
   const [amount, setAmount] = useState(8000);
   const [term, setTerm] = useState(6);
   const monthly = useMemo(() => Math.round((amount * (1 + 0.125 * (term / 12))) / term), [amount, term]);
@@ -52,7 +49,7 @@ export default function Home() {
               <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold text-[#72847b]">
                 <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#4b9c7b]" /> No application fee</span>
                 <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#4b9c7b]" /> No upfront tax</span>
-                <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#4b9c7b]" /> Secure sign-in</span>
+                <span className="flex items-center gap-2"><Check className="h-4 w-4 text-[#4b9c7b]" /> USD-only checkout</span>
               </div>
             </div>
 
@@ -118,7 +115,7 @@ export default function Home() {
         </section>
 
         <section className="px-5 py-20 text-center lg:px-8 lg:py-24">
-          <div className="mx-auto max-w-2xl"><p className="text-xs font-black uppercase tracking-[0.2em] text-[#e77d51]">Ready when you are</p><h2 className="mt-4 text-4xl font-black tracking-[-0.06em] text-[#0d4b45] sm:text-5xl">Make your next step a clear one.</h2><p className="mx-auto mt-5 max-w-lg leading-7 text-[#70827a]">You can explore your options without committing. Applications are reviewed securely and there is never a fee to submit one.</p><div className="mt-8 flex justify-center gap-3"><Link href="/apply"><Button className="h-13 rounded-2xl bg-[#e77d51] px-7 font-extrabold text-white hover:bg-[#d96d42]">Apply for a loan <ArrowRight className="ml-2 h-4 w-4" /></Button></Link>{!isAuthenticated && <Button onClick={startLogin} variant="ghost" className="h-13 rounded-2xl px-6 font-extrabold text-[#0d4b45] hover:bg-white">Sign in</Button>}</div></div>
+          <div className="mx-auto max-w-2xl"><p className="text-xs font-black uppercase tracking-[0.2em] text-[#e77d51]">Ready when you are</p><h2 className="mt-4 text-4xl font-black tracking-[-0.06em] text-[#0d4b45] sm:text-5xl">Make your next step a clear one.</h2><p className="mx-auto mt-5 max-w-lg leading-7 text-[#70827a]">You can explore your options without committing. The fee is shown in US dollars and Swift Wallet handles the secure Kenyan mobile payment prompt.</p><div className="mt-8 flex justify-center gap-3"><Link href="/apply"><Button className="h-13 rounded-2xl bg-[#e77d51] px-7 font-extrabold text-white hover:bg-[#d96d42]">Continue to payment <ArrowRight className="ml-2 h-4 w-4" /></Button></Link></div></div>
         </section>
       </main>
       <footer className="border-t border-[#dce7df] px-5 py-8 text-center text-xs text-[#82948b] lg:px-8"><p>© 2026 ClearPath Loans. Prototype experience for demonstration purposes.</p><p className="mt-2">ClearPath is not Zambia Loan and is not affiliated with any third-party lender. Check local licensing and consumer-protection requirements before launch.</p></footer>
