@@ -15,6 +15,13 @@
       "when": 1790091748255,
       "tag": "0001_perfect_bloodstorm",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1790093231706,
+      "tag": "0002_curvy_phalanx",
+      "breakpoints": true
     }
   ]
 }

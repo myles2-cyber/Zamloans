@@ -8,6 +8,7 @@ import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { handleSwiftWalletCallback } from "../swiftwallet";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -31,6 +32,15 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  app.post("/api/swiftwallet/callback", express.raw({ type: "application/json" }), async (req, res) => {
+    try {
+      const result = await handleSwiftWalletCallback(req.body as Buffer, req.header("X-SwiftWallet-Signature"));
+      res.status(result.status).json({ status: result.ok ? "ok" : "rejected" });
+    } catch (error) {
+      console.error("[SwiftWallet] Callback processing failed:", error);
+      res.status(500).json({ status: "error" });
+    }
+  });
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

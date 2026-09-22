@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertLoanApplication, InsertUser, LoanApplication, loanApplications, users } from "../drizzle/schema";
+import { InsertLoanApplication, InsertSwiftWalletPayment, InsertUser, LoanApplication, SwiftWalletPayment, loanApplications, swiftWalletPayments, users } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -20,22 +20,17 @@ export async function getDb() {
 export async function upsertUser(user: InsertUser): Promise<void> {
   if (!user.openId) throw new Error("User openId is required for upsert");
   const db = await getDb();
-  if (!db) {
-    console.warn("[Database] Cannot upsert user: database not available");
-    return;
-  }
+  if (!db) return;
 
   const values: InsertUser = { openId: user.openId };
   const updateSet: Record<string, unknown> = {};
   const textFields = ["name", "email", "loginMethod"] as const;
-
   for (const field of textFields) {
     if (user[field] !== undefined) {
       values[field] = user[field] ?? null;
       updateSet[field] = user[field] ?? null;
     }
   }
-
   if (user.lastSignedIn !== undefined) {
     values.lastSignedIn = user.lastSignedIn;
     updateSet.lastSignedIn = user.lastSignedIn;
@@ -49,7 +44,6 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   }
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
-
   await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
 }
 
@@ -86,4 +80,26 @@ export async function getApplicationByIdForUser(id: number, userId: number): Pro
   if (!db) return undefined;
   const result = await db.select().from(loanApplications).where(and(eq(loanApplications.id, id), eq(loanApplications.userId, userId))).limit(1);
   return result[0];
+}
+
+export async function createSwiftWalletPayment(input: InsertSwiftWalletPayment): Promise<SwiftWalletPayment | undefined> {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const result = await db.insert(swiftWalletPayments).values(input);
+  const created = await db.select().from(swiftWalletPayments).where(eq(swiftWalletPayments.id, result[0].insertId)).limit(1);
+  return created[0];
+}
+
+export async function getSwiftWalletPaymentByReference(externalReference: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(swiftWalletPayments).where(eq(swiftWalletPayments.externalReference, externalReference)).limit(1);
+  return result[0];
+}
+
+export async function updateSwiftWalletPaymentByReference(externalReference: string, update: Partial<Pick<SwiftWalletPayment, "swiftTransactionId" | "status" | "rawStatus">>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(swiftWalletPayments).set(update).where(eq(swiftWalletPayments.externalReference, externalReference));
+  return getSwiftWalletPaymentByReference(externalReference);
 }

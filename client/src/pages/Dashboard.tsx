@@ -3,6 +3,7 @@ import { PortalHeader } from "@/components/PortalHeader";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { ArrowRight, Check, Clock3, FileText, Loader2, MessageCircle, ShieldCheck } from "lucide-react";
+import { useState } from "react";
 import { Link } from "wouter";
 
 const statusCopy = {
@@ -16,7 +17,21 @@ export default function Dashboard() {
   const { user, isAuthenticated, loading } = useAuth();
   const auth = trpc.auth.me.useQuery();
   const applications = trpc.loans.mine.useQuery(undefined, { enabled: Boolean(auth.data) });
+  const initiatePayment = trpc.payments.initiateApprovedServiceFee.useMutation();
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [paymentMessage, setPaymentMessage] = useState("");
   const latest = applications.data?.[0];
+
+  const startFeePayment = async () => {
+    if (!latest) return;
+    setPaymentMessage("");
+    try {
+      const result = await initiatePayment.mutateAsync({ applicationId: latest.id, phoneNumber, origin: window.location.origin });
+      setPaymentMessage(result.message);
+    } catch (error) {
+      setPaymentMessage(error instanceof Error ? error.message : "Payment could not be started.");
+    }
+  };
 
   if (loading || auth.isLoading) return <div className="grid min-h-screen place-items-center bg-[#f7f8f2] text-[#0d4b45]"><Loader2 className="h-6 w-6 animate-spin" /></div>;
   if (!isAuthenticated || !auth.data) return <div className="min-h-screen bg-[#f7f8f2] text-[#102c28]"><PortalHeader /><main className="mx-auto max-w-xl px-5 py-20 text-center"><ShieldCheck className="mx-auto h-10 w-10 text-[#2d8a68]" /><h1 className="mt-6 text-3xl font-black text-[#0d4b45]">Your account is private</h1><p className="mt-3 text-[#70827a]">Sign in to view saved applications and updates.</p><Link href="/apply" className="mt-7 inline-flex h-12 items-center rounded-xl bg-[#0d4b45] px-6 font-bold text-white">Go to application <ArrowRight className="ml-2 h-4 w-4" /></Link></main></div>;
@@ -33,6 +48,7 @@ export default function Dashboard() {
         </section>
         <aside className="rounded-[2rem] bg-[#0d4b45] p-6 text-white sm:p-8"><div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10"><ShieldCheck className="h-5 w-5 text-[#f6b58f]" /></div><h2 className="mt-6 text-2xl font-black tracking-[-0.04em]">Your information stays yours.</h2><p className="mt-4 text-sm leading-7 text-[#bdd3c7]">ClearPath uses managed sign-in and protected sessions. We do not display or store raw passwords in this application.</p><div className="mt-8 space-y-4 border-t border-white/10 pt-6 text-sm"><div className="flex items-center gap-3 text-[#d5e6dd]"><Check className="h-4 w-4 text-[#f6b58f]" /> Secure account session</div><div className="flex items-center gap-3 text-[#d5e6dd]"><Check className="h-4 w-4 text-[#f6b58f]" /> Transparent application record</div><div className="flex items-center gap-3 text-[#d5e6dd]"><Check className="h-4 w-4 text-[#f6b58f]" /> No advance-fee loan requests</div></div><a href="mailto:support@clearpath.example" className="mt-8 inline-flex items-center text-sm font-extrabold text-[#f6b58f]">Contact support <MessageCircle className="ml-2 h-4 w-4" /></a></aside>
       </div>
+      {latest?.status === "approved" && latest.approvedFeeUsd && <section className="mt-8 rounded-[2rem] border border-[#f1d4c4] bg-[#fff7f1] p-6 sm:p-8"><div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-[#e77d51]">Approved offer · service fee</p><h2 className="mt-2 text-3xl font-black tracking-[-0.05em] text-[#0d4b45]">${Number(latest.approvedFeeUsd).toFixed(2)}</h2><p className="mt-2 max-w-xl text-sm leading-6 text-[#70827a]">This is the exact fee disclosed in your approved offer. ClearPath will never request a tax, deposit, or release payment to unlock a loan.</p></div><div className="w-full max-w-sm"><label className="block text-sm font-extrabold text-[#0d4b45]">Kenyan M-Pesa number<input aria-label="Kenyan M-Pesa number" value={phoneNumber} onChange={event => setPhoneNumber(event.target.value)} placeholder="07XXXXXXXX" className="mt-2 h-12 w-full rounded-xl border border-[#e7cfc1] bg-white px-3 text-sm font-semibold text-[#30534a] outline-none focus:border-[#e77d51] focus:ring-2 focus:ring-[#f6b58f]" /></label><Button disabled={initiatePayment.isPending || !phoneNumber} onClick={startFeePayment} className="mt-3 h-12 w-full rounded-xl bg-[#e77d51] font-extrabold text-white hover:bg-[#d96d42]">{initiatePayment.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending request…</> : <>Pay disclosed fee <ArrowRight className="ml-2 h-4 w-4" /></>}</Button>{paymentMessage && <p className="mt-3 text-xs font-semibold text-[#5f766b]">{paymentMessage}</p>}</div></div></section>}
       <section className="mt-8 rounded-2xl border border-[#dce7df] bg-[#eaf4ed] p-5"><p className="text-sm leading-6 text-[#38695c]"><strong className="text-[#1b594d]">Important:</strong> ClearPath Loans is a product prototype. Before accepting real applications, add verified lender licensing, legal disclosures, credit-decision policies, privacy terms, and a regulated payment/disbursement provider.</p></section>
     </main></div>
   );
